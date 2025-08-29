@@ -2,8 +2,11 @@
   "name": "latex-symbols-lsp",
   "version": "1.0.0",
   "main": "dist/server.js",
+  "bin": {
+    "latex-symbols-lsp": "dist/server.js"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && echo '#!/usr/bin/env node' > tmp && cat dist/server.js >> tmp && mv tmp dist/server.js && chmod +x dist/server.js",
     "start": "node dist/server.js",
     "dev": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1"

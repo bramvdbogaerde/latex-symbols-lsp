@@ -18,13 +18,30 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { latexSymbols, symbolDescriptions } from './symbols';
 
+/**
+ * LaTeX Symbols Language Server Protocol (LSP) implementation.
+ * 
+ * This LSP provides:
+ * - Autocompletion for LaTeX math symbols triggered by backslash (\)
+ * - Diagnostics highlighting LaTeX commands that can be converted to Unicode
+ * - Code actions (quick fixes) to replace LaTeX commands with Unicode symbols
+ * - Support for 150+ mathematical symbols including Greek letters, operators, arrows, etc.
+ */
+
+// Create LSP connection with all proposed features enabled
 const connection = createConnection(ProposedFeatures.all);
+// Document manager for tracking open text documents
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
+// Client capability flags
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
+/**
+ * Initialize the LSP server and negotiate capabilities with the client.
+ * Sets up text document sync, completion provider, and code action provider.
+ */
 connection.onInitialize((params: InitializeParams) => {
   const capabilities = params.capabilities;
 
@@ -64,6 +81,10 @@ connection.onInitialize((params: InitializeParams) => {
   return result;
 });
 
+/**
+ * Called after the client-server handshake is complete.
+ * Registers for configuration and workspace folder change notifications if supported.
+ */
 connection.onInitialized(() => {
   if (hasConfigurationCapability) {
     connection.client.register(DidChangeConfigurationNotification.type, undefined);
@@ -75,8 +96,13 @@ connection.onInitialized(() => {
   }
 });
 
+/**
+ * Configuration settings for the LaTeX Symbols LSP.
+ */
 interface LaTeXSettings {
+  /** Maximum number of diagnostic problems to report per document */
   maxNumberOfProblems: number;
+  /** Whether to enable automatic Unicode replacement suggestions */
   enableAutoReplacement: boolean;
 }
 
@@ -86,7 +112,9 @@ const defaultSettings: LaTeXSettings = {
 };
 
 let globalSettings: LaTeXSettings = defaultSettings;
-const documentSettings: Map<string, Thenable<LaTeXSettings>> = new Map();
+
+// Mapping from files names to its settings
+const documentSettings: Map<string, LaTeXSettings> = new Map();
 
 connection.onDidChangeConfiguration(change => {
   if (hasConfigurationCapability) {
@@ -99,16 +127,22 @@ connection.onDidChangeConfiguration(change => {
   documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<LaTeXSettings> {
+/**
+ * Attempts to get the configuration from the editor, or uses the default configuration otherwise
+ */
+async function getDocumentSettings(resource: string): Promise<LaTeXSettings> {
   if (!hasConfigurationCapability) {
     return Promise.resolve(globalSettings);
   }
   let result = documentSettings.get(resource);
   if (!result) {
-    result = connection.workspace.getConfiguration({
+    result = await connection.workspace.getConfiguration({
       scopeUri: resource,
       section: 'latexSymbolsLsp'
     });
+    if (!result) {
+      result = defaultSettings
+    }
     documentSettings.set(resource, result);
   }
   return result;
@@ -122,6 +156,12 @@ documents.onDidChangeContent(change => {
   validateTextDocument(change.document);
 });
 
+/**
+ * Validates a text document by finding LaTeX commands that can be converted to Unicode.
+ * Creates diagnostics (information-level) for each convertible LaTeX command found.
+ * 
+ * @param textDocument The document to validate
+ */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   const settings = await getDocumentSettings(textDocument.uri);
   const text = textDocument.getText();
@@ -149,6 +189,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
+/**
+ * Provides autocompletion for LaTeX symbols.
+ * Triggered when user types backslash (\) followed by letters.
+ * Returns completion items that replace the LaTeX command with Unicode symbols.
+ */
 connection.onCompletion(
   (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
     const document = documents.get(_textDocumentPosition.textDocument.uri);
@@ -177,12 +222,18 @@ connection.onCompletion(
     for (const [command, unicode] of Object.entries(latexSymbols)) {
       if (command.startsWith(currentCommand)) {
         const item: CompletionItem = {
-          label: command,
+          label: `${command} → ${unicode}`,
           kind: CompletionItemKind.Text,
-          data: command,
+          data: unicode,
           detail: `${unicode} - ${symbolDescriptions[command] || 'LaTeX symbol'}`,
           documentation: `Converts LaTeX command ${command} to Unicode symbol ${unicode}`,
-          insertText: command.substring(currentCommand.length),
+          textEdit: {
+            range: {
+              start: document.positionAt(start),
+              end: document.positionAt(offset)
+            },
+            newText: unicode
+          },
           filterText: command
         };
         completionItems.push(item);
@@ -193,6 +244,10 @@ connection.onCompletion(
   }
 );
 
+/**
+ * Resolves additional details for completion items.
+ * Adds detailed information about the Unicode symbol and LaTeX command.
+ */
 connection.onCompletionResolve(
   (item: CompletionItem): CompletionItem => {
     const command = item.data as string;
@@ -204,6 +259,10 @@ connection.onCompletionResolve(
   }
 );
 
+/**
+ * Provides code actions (quick fixes) to replace LaTeX commands with Unicode symbols.
+ * Triggered when user activates code actions on diagnostics created by validateTextDocument.
+ */
 connection.onCodeAction((params) => {
   const document = documents.get(params.textDocument.uri);
   if (!document) {

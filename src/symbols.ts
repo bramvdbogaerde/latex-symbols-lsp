@@ -1,3 +1,23 @@
+/**
+ * Comprehensive mapping of LaTeX math commands to their Unicode equivalents.
+ * 
+ * Includes over 150 symbols covering:
+ * - Greek letters (uppercase and lowercase)
+ * - Mathematical operators (+, ×, ÷, etc.)
+ * - Relations (≤, ≥, ≠, ∈, etc.)
+ * - Arrows (→, ⇒, ↔, etc.)
+ * - Set theory symbols (∩, ∪, ⊂, ∅, etc.)
+ * - Logic symbols (∀, ∃, ∧, ∨, ¬, etc.)
+ * - Calculus symbols (∂, ∇, ∫, ∑, ∏, etc.)
+ * - Miscellaneous mathematical symbols
+ * 
+ * @example
+ * ```typescript
+ * latexSymbols['\\alpha'] // Returns: 'α'
+ * latexSymbols['\\rightarrow'] // Returns: '→'
+ * latexSymbols['\\sum'] // Returns: '∑'
+ * ```
+ */
 export const latexSymbols: Record<string, string> = {
   // Greek letters (lowercase)
   "\\alpha": "α",
@@ -188,6 +208,20 @@ export const latexSymbols: Record<string, string> = {
   "\\leadsto": "↝"
 };
 
+/**
+ * Human-readable descriptions for LaTeX symbols.
+ * Used in autocompletion detail text and documentation.
+ * 
+ * Maps LaTeX commands to their descriptive names for better UX.
+ * Not all symbols in latexSymbols have descriptions - only the most common ones.
+ * 
+ * @example
+ * ```typescript
+ * symbolDescriptions['\\alpha'] // Returns: 'Greek letter alpha'
+ * symbolDescriptions['\\rightarrow'] // Returns: 'Right arrow'
+ * symbolDescriptions['\\sum'] // Returns: 'Summation'
+ * ```
+ */
 export const symbolDescriptions: Record<string, string> = {
   "\\alpha": "Greek letter alpha",
   "\\beta": "Greek letter beta",
