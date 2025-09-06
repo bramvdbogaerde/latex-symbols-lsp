@@ -85,34 +85,17 @@ lspconfig.latex_symbols.setup{}
 #### Emacs
 Use with lsp-mode or eglot.
 
-## Testing
-
-A test file `test.tex` is provided with examples of various LaTeX symbols. Open this file in your LSP-enabled editor to test the functionality:
-
-1. Type `\alp` and see `\alpha` suggested in autocompletion
-2. Complete the symbol to see a diagnostic suggesting Unicode replacement
-3. Use the code action (quick fix) to replace `\alpha` with `α`
-
 ## Configuration
 
 The LSP supports the following configuration options:
 
 - `maxNumberOfProblems`: Maximum number of diagnostics to show (default: 1000)
-- `enableAutoReplacement`: Enable automatic Unicode replacement suggestions (default: true)
 
 ## Architecture
 
 - `src/server.ts`: Main LSP server implementation
 - `src/symbols.ts`: LaTeX symbol to Unicode mappings and descriptions
 - `dist/`: Compiled JavaScript output
-- `test.tex`: Example file for testing functionality
-
-## Contributing
-
-1. Add new symbols to `src/symbols.ts`
-2. Update symbol descriptions for better autocompletion
-3. Test with the provided `test.tex` file
-4. Build and verify functionality
 
 ## License
 
